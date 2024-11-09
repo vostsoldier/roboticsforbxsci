@@ -2,14 +2,21 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import javax.swing.JPanel;
+import javax.swing.JFrame;
+import javax.swing.Timer;
+import java.awt.Graphics;
+import java.awt.Color;
+import java.awt.AlphaComposite;
+import java.awt.Graphics2D;
 
 class Vector {
     private List<Point> points = new ArrayList<>();
     private List<Point> obstacles = new ArrayList<>();
     private List<Point> items = new ArrayList<>();
     private Point currentPoint = new Point(0, 0);
-    private Point targetPoint = new Point(24, 24); // Default target point
-    private Point dropOffPoint = new Point(12, 12); // Drop-off location
+    private Point targetPoint = new Point(24, 24); 
+    private Point dropOffPoint = new Point(12, 12); 
     private Random random = new Random();
     private boolean carryingItem = false;
 
@@ -20,7 +27,7 @@ class Vector {
     }
 
     private void generateObstacles() {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 30; i++) {
             Point obstacle = new Point(random.nextInt(25), random.nextInt(25));
             obstacles.add(obstacle);
         }
@@ -49,8 +56,7 @@ class Vector {
                     synchronized (points) {
                         points.add(nextPoint);
                     }
-                    System.out.println("Generated Coordinates: (" + nextPoint.getX() + ", " + nextPoint.getY() + ")");
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
                 }
             } catch (Exception e) {
                 System.out.println("Exception is caught");
@@ -79,15 +85,27 @@ class Vector {
 
         if (nextPoint.equals(targetPoint)) {
             if (!carryingItem && items.contains(nextPoint)) {
-                items.remove(nextPoint);
-                carryingItem = true;
+                pickUpItem(nextPoint);
             } else if (carryingItem && nextPoint.equals(dropOffPoint)) {
-                carryingItem = false;
+                dropOffItem(nextPoint);
             }
         }
 
         currentPoint = nextPoint;
         return nextPoint;
+    }
+
+    private void pickUpItem(Point point) {
+        items.remove(point);
+        carryingItem = true;
+        System.out.println("Picked up item at: (" + point.getX() + ", " + point.getY() + ")");
+        System.out.println("realjoint.io: Picked up item");
+    }
+
+    private void dropOffItem(Point point) {
+        carryingItem = false;
+        System.out.println("Dropped off item at: (" + point.getX() + ", " + point.getY() + ")");
+        System.out.println("realjoint.io: Dropped off item");
     }
 
     private Point findNearestItem() {
@@ -145,16 +163,17 @@ class Vector {
         return dropOffPoint;
     }
 
+    public Point getCurrentPoint() {
+        return currentPoint;
+    }
+
     public List<Point> getSensorPoints(int radius) {
         List<Point> sensorPoints = new ArrayList<>();
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dy = -radius; dy <= radius; dy++) {
-                if (dx == 0 && dy == 0) continue; // Skip the current point
-                Point sensorPoint = new Point(currentPoint.x + dx, currentPoint.y + dy);
-                if (isValidPoint(sensorPoint)) {
-                    sensorPoints.add(sensorPoint);
-                }
-            }
+        for (int i = 1; i <= radius; i++) {
+            sensorPoints.add(new Point(currentPoint.x + i, currentPoint.y)); 
+            sensorPoints.add(new Point(currentPoint.x - i, currentPoint.y)); 
+            sensorPoints.add(new Point(currentPoint.x, currentPoint.y + i));
+            sensorPoints.add(new Point(currentPoint.x, currentPoint.y - i)); 
         }
         return sensorPoints;
     }
@@ -162,86 +181,92 @@ class Vector {
 public class Main {
     public static void main(String[] args) {
         Vector vectorInstance = new Vector();
-        vectorInstance.generateRandomTargetPoint(); // Generate a random target point
+        vectorInstance.generateRandomTargetPoint();
         vectorInstance.startGeneratingCoordinates(); 
-        Thread printThread = new Thread(() -> {
-            while (true) {
-                List<Point> points = vectorInstance.getPoints();
-                List<Point> obstacles = vectorInstance.getObstacles();
-                List<Point> items = vectorInstance.getItems();
-                Point dropOffPoint = vectorInstance.getDropOffPoint();
-                List<Point> sensorPoints = vectorInstance.getSensorPoints(2); // Sensor radius of 2
-                printCoordinatePlane(points, obstacles, items, dropOffPoint, sensorPoints);
-                try {
-                    Thread.sleep(5000); 
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+
+        JFrame frame = new JFrame("Robot Grid");
+        GridPanel gridPanel = new GridPanel();
+        frame.add(gridPanel);
+        frame.setSize(520, 540);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+
+        Timer timer = new Timer(1000, e -> {
+            List<Point> points = vectorInstance.getPoints();
+            List<Point> obstacles = vectorInstance.getObstacles();
+            List<Point> items = vectorInstance.getItems();
+            Point dropOffPoint = vectorInstance.getDropOffPoint();
+            List<Point> sensorPoints = vectorInstance.getSensorPoints(1); 
+            gridPanel.updateGrid(points, obstacles, items, dropOffPoint, sensorPoints);
         });
+        timer.start();
+    }
+}
 
-        printThread.start();
+class GridPanel extends JPanel {
+    private List<Point> points;
+    private List<Point> obstacles;
+    private List<Point> items;
+    private Point dropOffPoint;
+    private List<Point> sensorPoints;
+
+    public void updateGrid(List<Point> points, List<Point> obstacles, List<Point> items, Point dropOffPoint, List<Point> sensorPoints) {
+        this.points = points;
+        this.obstacles = obstacles;
+        this.items = items;
+        this.dropOffPoint = dropOffPoint;
+        this.sensorPoints = sensorPoints;
+        repaint();
     }
 
-    private static void printCoordinatePlane(List<Point> points, List<Point> obstacles, List<Point> items, Point dropOffPoint, List<Point> sensorPoints) {
-        char[][] plane = new char[25][25];
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, getWidth(), getHeight());
+
+        int cellSize = 20;
         for (int i = 0; i < 25; i++) {
             for (int j = 0; j < 25; j++) {
-                plane[i][j] = '.';
+                g.setColor(Color.LIGHT_GRAY);
+                g.drawRect(i * cellSize, j * cellSize, cellSize, cellSize);
             }
         }
 
-        for (Point obstacle : obstacles) {
-            int x = (int) obstacle.getX();
-            int y = (int) obstacle.getY();
-            if (x < 25 && y < 25) {
-                plane[y][x] = 'O';
+        if (obstacles != null) {
+            g.setColor(Color.RED);
+            for (Point obstacle : obstacles) {
+                g.fillRect(obstacle.x * cellSize, obstacle.y * cellSize, cellSize, cellSize);
             }
         }
 
-        for (Point item : items) {
-            int x = (int) item.getX();
-            int y = (int) item.getY();
-            if (x < 25 && y < 25) {
-                plane[y][x] = 'I';
+        if (items != null) {
+            g.setColor(Color.BLUE);
+            for (Point item : items) {
+                g.fillRect(item.x * cellSize, item.y * cellSize, cellSize, cellSize);
             }
         }
 
-        int dropOffX = (int) dropOffPoint.getX();
-        int dropOffY = (int) dropOffPoint.getY();
-        if (dropOffX < 25 && dropOffY < 25) {
-            plane[dropOffY][dropOffX] = 'D';
+        if (dropOffPoint != null) {
+            g.setColor(Color.GREEN);
+            g.fillRect(dropOffPoint.x * cellSize, dropOffPoint.y * cellSize, cellSize, cellSize);
         }
 
-        for (Point point : points) {
-            int x = (int) point.getX();
-            int y = (int) point.getY();
-            if (x < 25 && y < 25) {
-                plane[y][x] = 'X';
+        if (points != null) {
+            g.setColor(Color.BLACK);
+            for (Point point : points) {
+                g.fillRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
             }
         }
 
-        for (Point sensorPoint : sensorPoints) {
-            int x = (int) sensorPoint.getX();
-            int y = (int) sensorPoint.getY();
-            if (x < 25 && y < 25) {
-                if (isObstacle(sensorPoint, obstacles)) {
-                    plane[y][x] = '!';
-                } else {
-                    plane[y][x] = 'S';
-                }
+        if (sensorPoints != null) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+            g2d.setColor(Color.ORANGE);
+            for (Point sensorPoint : sensorPoints) {
+                g2d.fillRect(sensorPoint.x * cellSize, sensorPoint.y * cellSize, cellSize, cellSize);
             }
+            g2d.dispose();
         }
-
-        for (int i = 0; i < 25; i++) {
-            for (int j = 0; j < 25; j++) {
-                System.out.print(plane[i][j] + " ");
-            }
-            System.out.println();
-        }
-    }
-
-    private static boolean isObstacle(Point point, List<Point> obstacles) {
-        return obstacles.contains(point);
     }
 }
