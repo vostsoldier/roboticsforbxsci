@@ -1,4 +1,5 @@
 import java.awt.Point;
+import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -9,6 +10,29 @@ import java.awt.Graphics;
 import java.awt.Color;
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
+
+class Node implements Comparable<Node> {
+    Point point;
+    Node parent;
+    double g; // Cost from start to this node
+    double h; // Heuristic cost to target
+
+    public Node(Point point, Node parent, double g, double h) {
+        this.point = point;
+        this.parent = parent;
+        this.g = g;
+        this.h = h;
+    }
+
+    public double getF() {
+        return g + h;
+    }
+
+    @Override
+    public int compareTo(Node other) {
+        return Double.compare(this.getF(), other.getF());
+    }
+}
 
 class Vector {
     private List<Point> points = new ArrayList<>();
@@ -27,7 +51,7 @@ class Vector {
     }
 
     private void generateObstacles() {
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 50; i++) {
             Point obstacle = new Point(random.nextInt(25), random.nextInt(25));
             obstacles.add(obstacle);
         }
@@ -56,6 +80,7 @@ class Vector {
                     synchronized (points) {
                         points.add(nextPoint);
                     }
+                    System.out.println("Generated Coordinates: (" + nextPoint.getX() + ", " + nextPoint.getY() + ")");
                     Thread.sleep(500);
                 }
             } catch (Exception e) {
@@ -72,27 +97,74 @@ class Vector {
             targetPoint = dropOffPoint;
         }
 
-        int dx = targetPoint.x - currentPoint.x;
-        int dy = targetPoint.y - currentPoint.y;
-        int stepX = Integer.signum(dx);
-        int stepY = Integer.signum(dy);
-
-        Point nextPoint = new Point(currentPoint.x + stepX, currentPoint.y + stepY);
-
-        if (isObstacle(nextPoint)) {
-            nextPoint = avoidObstacle(nextPoint);
+        List<Point> path = findPath(currentPoint, targetPoint);
+        if (path.size() > 1) {
+            currentPoint = path.get(1); // Move to the next point in the path
         }
 
-        if (nextPoint.equals(targetPoint)) {
-            if (!carryingItem && items.contains(nextPoint)) {
-                pickUpItem(nextPoint);
-            } else if (carryingItem && nextPoint.equals(dropOffPoint)) {
-                dropOffItem(nextPoint);
+        if (currentPoint.equals(targetPoint)) {
+            if (!carryingItem && items.contains(currentPoint)) {
+                pickUpItem(currentPoint);
+            } else if (carryingItem && currentPoint.equals(dropOffPoint)) {
+                dropOffItem(currentPoint);
             }
         }
 
-        currentPoint = nextPoint;
-        return nextPoint;
+        return currentPoint;
+    }
+
+    private List<Point> findPath(Point start, Point target) {
+        PriorityQueue<Node> openList = new PriorityQueue<>();
+        Set<Point> closedList = new HashSet<>();
+        openList.add(new Node(start, null, 0, start.distance(target)));
+
+        while (!openList.isEmpty()) {
+            Node currentNode = openList.poll();
+            if (currentNode.point.equals(target)) {
+                return constructPath(currentNode);
+            }
+
+            closedList.add(currentNode.point);
+
+            for (Point neighbor : getNeighbors(currentNode.point)) {
+                if (closedList.contains(neighbor) || isObstacle(neighbor)) {
+                    continue;
+                }
+
+                double tentativeG = currentNode.g + currentNode.point.distance(neighbor);
+                Node neighborNode = new Node(neighbor, currentNode, tentativeG, neighbor.distance(target));
+
+                if (openList.contains(neighborNode) && tentativeG >= neighborNode.g) {
+                    continue;
+                }
+
+                openList.add(neighborNode);
+            }
+        }
+
+        return Collections.singletonList(start); // Return the start point if no path is found
+    }
+
+    private List<Point> constructPath(Node node) {
+        List<Point> path = new ArrayList<>();
+        while (node != null) {
+            path.add(node.point);
+            node = node.parent;
+        }
+        Collections.reverse(path);
+        return path;
+    }
+
+    private List<Point> getNeighbors(Point point) {
+        List<Point> neighbors = new ArrayList<>();
+        int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for (int[] direction : directions) {
+            Point neighbor = new Point(point.x + direction[0], point.y + direction[1]);
+            if (isValidPoint(neighbor)) {
+                neighbors.add(neighbor);
+            }
+        }
+        return neighbors;
     }
 
     private void pickUpItem(Point point) {
@@ -125,22 +197,6 @@ class Vector {
         return obstacles.contains(point);
     }
 
-    private Point avoidObstacle(Point point) {
-        Point[] alternatives = {
-            new Point(point.x + 1, point.y),
-            new Point(point.x - 1, point.y),
-            new Point(point.x, point.y + 1),
-            new Point(point.x, point.y - 1)
-        };
-
-        for (Point alternative : alternatives) {
-            if (!isObstacle(alternative) && isValidPoint(alternative)) {
-                return alternative;
-            }
-        }
-        return point;
-    }
-
     private boolean isValidPoint(Point point) {
         return point.x >= 0 && point.x < 25 && point.y >= 0 && point.y < 25;
     }
@@ -170,10 +226,10 @@ class Vector {
     public List<Point> getSensorPoints(int radius) {
         List<Point> sensorPoints = new ArrayList<>();
         for (int i = 1; i <= radius; i++) {
-            sensorPoints.add(new Point(currentPoint.x + i, currentPoint.y)); 
-            sensorPoints.add(new Point(currentPoint.x - i, currentPoint.y)); 
-            sensorPoints.add(new Point(currentPoint.x, currentPoint.y + i));
-            sensorPoints.add(new Point(currentPoint.x, currentPoint.y - i)); 
+            sensorPoints.add(new Point(currentPoint.x + i, currentPoint.y)); // Right
+            sensorPoints.add(new Point(currentPoint.x - i, currentPoint.y)); // Left
+            sensorPoints.add(new Point(currentPoint.x, currentPoint.y + i)); // Down
+            sensorPoints.add(new Point(currentPoint.x, currentPoint.y - i)); // Up
         }
         return sensorPoints;
     }
@@ -192,7 +248,7 @@ public class Main {
         frame.setVisible(true);
 
         Timer timer = new Timer(1000, e -> {
-            List<Point> points = vectorInstance.getPoints();
+            List<Point> points = vectorInstance.getPoints(); 
             List<Point> obstacles = vectorInstance.getObstacles();
             List<Point> items = vectorInstance.getItems();
             Point dropOffPoint = vectorInstance.getDropOffPoint();
