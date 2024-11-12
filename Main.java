@@ -14,8 +14,8 @@ import java.awt.Graphics2D;
 class Node implements Comparable<Node> {
     Point point;
     Node parent;
-    double g; // Cost from start to this node
-    double h; // Heuristic cost to target
+    double g;
+    double h; 
 
     public Node(Point point, Node parent, double g, double h) {
         this.point = point;
@@ -99,7 +99,7 @@ class Vector {
 
         List<Point> path = findPath(currentPoint, targetPoint);
         if (path.size() > 1) {
-            currentPoint = path.get(1); // Move to the next point in the path
+            currentPoint = path.get(1); 
         }
 
         if (currentPoint.equals(targetPoint)) {
@@ -142,7 +142,7 @@ class Vector {
             }
         }
 
-        return Collections.singletonList(start); // Return the start point if no path is found
+        return Collections.singletonList(start); 
     }
 
     private List<Point> constructPath(Node node) {
@@ -226,10 +226,10 @@ class Vector {
     public List<Point> getSensorPoints(int radius) {
         List<Point> sensorPoints = new ArrayList<>();
         for (int i = 1; i <= radius; i++) {
-            sensorPoints.add(new Point(currentPoint.x + i, currentPoint.y)); // Right
-            sensorPoints.add(new Point(currentPoint.x - i, currentPoint.y)); // Left
-            sensorPoints.add(new Point(currentPoint.x, currentPoint.y + i)); // Down
-            sensorPoints.add(new Point(currentPoint.x, currentPoint.y - i)); // Up
+            sensorPoints.add(new Point(currentPoint.x + i, currentPoint.y)); 
+            sensorPoints.add(new Point(currentPoint.x - i, currentPoint.y));
+            sensorPoints.add(new Point(currentPoint.x, currentPoint.y + i)); 
+            sensorPoints.add(new Point(currentPoint.x, currentPoint.y - i)); 
         }
         return sensorPoints;
     }
