@@ -51,7 +51,7 @@ class Vector {
     }
 
     private void generateObstacles() {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 75; i++) {
             Point obstacle = new Point(random.nextInt(25), random.nextInt(25));
             obstacles.add(obstacle);
         }
