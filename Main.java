@@ -167,7 +167,6 @@ class Vector {
         }
         return neighbors;
     }
-
     private void pickUpItem(Point point) {
         items.remove(point);
         carryingItem = true;
@@ -223,7 +222,7 @@ class Vector {
     public Point getCurrentPoint() {
         return currentPoint;
     }
-
+    //Fix this - very inefficent, and not optimized for priority race conditions.
     public List<Point> getSensorPoints(int radius) {
         List<Point> sensorPoints = new ArrayList<>();
         for (int i = 1; i <= radius; i++) {
@@ -248,6 +247,7 @@ public class Main {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
         //CHANGE THIS TO CHANGE THE TIME OF UPDATING/ANIMATION
+        //Its so goofy right now - find a way to optimize this
         Timer timer = new Timer(250, e -> {
             List<Point> points = vectorInstance.getPoints(); 
             List<Point> obstacles = vectorInstance.getObstacles();
