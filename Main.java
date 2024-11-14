@@ -58,7 +58,7 @@ class Vector {
     }
 
     private void generateItems() {
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 10; i++) {
             Point item = new Point(random.nextInt(25), random.nextInt(25));
             items.add(item);
         }
@@ -81,7 +81,7 @@ class Vector {
                         points.add(nextPoint);
                     }
                     System.out.println("Generated Coordinates: (" + nextPoint.getX() + ", " + nextPoint.getY() + ")");
-                    Thread.sleep(500);
+                    Thread.sleep(400);
                 }
             } catch (Exception e) {
                 System.out.println("Exception is caught");
@@ -247,7 +247,7 @@ public class Main {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
 
-        Timer timer = new Timer(1000, e -> {
+        Timer timer = new Timer(400, e -> {
             List<Point> points = vectorInstance.getPoints(); 
             List<Point> obstacles = vectorInstance.getObstacles();
             List<Point> items = vectorInstance.getItems();
