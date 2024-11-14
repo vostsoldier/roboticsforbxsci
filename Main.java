@@ -81,7 +81,8 @@ class Vector {
                         points.add(nextPoint);
                     }
                     System.out.println("Generated Coordinates: (" + nextPoint.getX() + ", " + nextPoint.getY() + ")");
-                    Thread.sleep(400);
+                    //CHANGE THIS TO CHANGE THE TIME OF COORD GENERATION
+                    Thread.sleep(250);
                 }
             } catch (Exception e) {
                 System.out.println("Exception is caught");
@@ -246,8 +247,8 @@ public class Main {
         frame.setSize(520, 540);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
-
-        Timer timer = new Timer(400, e -> {
+        //CHANGE THIS TO CHANGE THE TIME OF UPDATING/ANIMATION
+        Timer timer = new Timer(250, e -> {
             List<Point> points = vectorInstance.getPoints(); 
             List<Point> obstacles = vectorInstance.getObstacles();
             List<Point> items = vectorInstance.getItems();
