@@ -3,6 +3,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "shapes",
+      "request": "launch",
+      "mainClass": "shapes",
+      "projectName": "roboticsforbxsci_75d0362f"
+    },
+    {
+      "type": "java",
       "name": "java101problems",
       "request": "launch",
       "mainClass": "java101problems",
