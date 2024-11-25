@@ -3,6 +3,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Library",
+      "request": "launch",
+      "mainClass": "Library",
+      "projectName": "roboticsforbxsci_75d0362f"
+    },
+    {
+      "type": "java",
       "name": "shapes",
       "request": "launch",
       "mainClass": "shapes",
